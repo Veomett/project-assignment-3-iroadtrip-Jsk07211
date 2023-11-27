@@ -18,15 +18,15 @@ public class IRoadTrip {
     }
 
     private void createStateNameDict(FileReader stateNames) {
-        createEntriesForStateNameExceptions();
-
         BufferedReader reader;
 
         try{
+            createEntriesForStateNameExceptions();
+
             reader = new BufferedReader(stateNames);
             String line = reader.readLine();    //skip first line
 
-            String line = reader.readLine();
+            line = reader.readLine();
             while (line != null) {
                 //state_name.tsv == tab separated values
                 String[] fieldVals = line.split("\t", 0);
@@ -45,7 +45,6 @@ public class IRoadTrip {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
     }
 
     //creates keys for states with difficult to detect aliases
