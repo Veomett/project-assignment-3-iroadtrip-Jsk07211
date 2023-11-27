@@ -3,9 +3,9 @@ import java.util.HashMap;
 
 public class Country implements Comparable<Country>{
     private ArrayList<String> countryNames;
-    private String countryCode;         //representative code
-    private HashMap<String, Country> neighbours;
-    private int distanceFromSource;     //all distances in files are whole numbers
+    private String countryCode;                 //representative code
+    private HashMap<String, Integer> neighbours;    //countryCode of neighbours and distance
+    private int distanceFromSource;             //all distances in files are whole numbers
 
     //Constructor for countries with >2 aliases
     public Country(ArrayList<String> countryNames, String countryCode) {

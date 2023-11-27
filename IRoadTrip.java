@@ -1,45 +1,91 @@
 import java.io.IOException;
 import java.util.HashMap;
-//ask prof how to import multimap wth
-//import java.com.google.common.collect.ArrayListMultimap;
 import java.util.StringTokenizer;
+import java.util.ArrayList;
 import java.io.*;
 
 public class IRoadTrip {
-    private HashMap<String, String[]> stateNameDict;
+    private HashMap<String, String> stateNameDict;
     private HashMap<String, Country> countriesGraph;
     public IRoadTrip (String [] args) throws IOException {
         FileReader borders = new FileReader(args[0]);
         FileReader capdist = new FileReader(args[1]);
-        FileReader stateName = new FileReader(args[2]);
+        FileReader stateNames = new FileReader(args[2]);
+
+        stateNameDict = new HashMap<String, String>();
+
+        createStateNameDict(stateNames);
     }
 
-    private void createStateNameDict() {
-        //Handle countries with multiple names
+    private void createStateNameDict(FileReader stateNames) {
+        createEntriesForStateNameExceptions();
+
+        BufferedReader reader;
+
+        try{
+            reader = new BufferedReader(stateNames);
+            String line = reader.readLine();    //skip first line
+
+            String line = reader.readLine();
+            while (line != null) {
+                //state_name.tsv == tab separated values
+                String[] fieldVals = line.split("\t", 0);
+
+                ArrayList<String> toAdd = generateAliasList(fieldVals[2]);
+                //if state is not in dictionary, add it with country code as value
+                for (String stateName : toAdd) {
+                    if (!stateNameDict.containsKey(stateName)) {
+                        stateNameDict.put(stateName, fieldVals[1]);
+                        System.out.printf("stateNameDict[%s]: %s\n", stateName, stateNameDict.get(stateName));
+                    }
+                }
+
+                line = reader.readLine();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    //creates keys for states with difficult to detect aliases
+    private void createEntriesForStateNameExceptions() {
         //First entry of alias list is the representative country code
         String[] DRCAliases = {"DRC", "Congo, Democratic Republic of", "Congo, Democratic Republic of the", "Democratic Republic of the Congo"};
         String[] PRKAliases = {"PRK", "North Korea", "Korea, North"};
         String[] ROKAliases = {"ROK", "South Korea", "Korea, South"};
         String[] MYAAliases = {"MYA", "Myanmar, Burma"};
-        String[] DRVAliases = {"DRV", "VNM", "RVN", "Vietnam"};
+        String[] DRVAliases = {"DRV", "VNM", "RVN", "Vietnam", "Annam", "Cochin China", "Tonkin"};
         String[] TANAliases = {"TAZ", "ZAN", "Tanzania", "Tanganyika", "Zanzibar"};
 
-        String[] countryCodeExceptionList = {"DRC", "PRK", "ROK", "MYA", "DRV", "TAZ"};
+        ArrayList<String[]> exceptionsList = new ArrayList<String[]>();
+        exceptionsList.add(DRCAliases);
+        exceptionsList.add(PRKAliases);
+        exceptionsList.add(ROKAliases);
+        exceptionsList.add(MYAAliases);
+        exceptionsList.add(DRVAliases);
+        exceptionsList.add(TANAliases);
 
+        for (String[] aliasList : exceptionsList) {
+            for (String val : aliasList) {
+                stateNameDict.put(val, aliasList[0]);
+            }
+        }
     }
 
-    public void generateAliasList() {
-        StringTokenizer st = new StringTokenizer("Turkey (Turkiye)");
+    //Handle () aliases as well
+    public ArrayList<String> generateAliasList(String toTokenise) {
+        ArrayList<String> toReturn = new ArrayList<String>();
 
-        while (st.hasMoreTokens()) {
-            String token = st.nextToken();
-            System.out.println(token);
+        String[] alias = toTokenise.split("\\(|/", 0);
 
-            if (token.contains("(")) {
-                token = token.substring(1, token.length() - 1);
-            }
-            System.out.println(token);
+        for (String s : alias) {
+            String sClean = s
+                            .replaceAll("\\)", "")
+                            .strip();
+            toReturn.add(sClean);
         }
+        return toReturn;
     }
 
     /*
