@@ -4,6 +4,7 @@ import java.util.StringTokenizer;
 import java.util.ArrayList;
 import java.io.*;
 
+//TODO: REGEX FOR BORDERS.TXT INTO STATENAMEDICT (since it has the variations like turkiye, can just look at LHS before =)
 public class IRoadTrip {
     private HashMap<String, String> stateNameDict;
     private HashMap<String, Country> countriesGraph;
@@ -32,13 +33,16 @@ public class IRoadTrip {
                 String[] fieldVals = line.split("\t", 0);
 
                 ArrayList<String> toAdd = generateAliasList(fieldVals[2]);
+                String repVal = toAdd.get(0);
                 //if state is not in dictionary, add it with country code as value
                 for (String stateName : toAdd) {
                     if (!stateNameDict.containsKey(stateName)) {
-                        stateNameDict.put(stateName, fieldVals[1]);
+                        stateNameDict.put(stateName, repVal);
                         System.out.printf("stateNameDict[%s]: %s\n", stateName, stateNameDict.get(stateName));
                     }
                 }
+                stateNameDict.put(fieldVals[1], repVal);
+                System.out.printf("stateNameDict[%s]: %s\n", fieldVals[1], stateNameDict.get(fieldVals[1]));
 
                 line = reader.readLine();
             }
@@ -50,12 +54,12 @@ public class IRoadTrip {
     //creates keys for states with difficult to detect aliases
     private void createEntriesForStateNameExceptions() {
         //First entry of alias list is the representative country code
-        String[] DRCAliases = {"DRC", "Congo, Democratic Republic of", "Congo, Democratic Republic of the", "Democratic Republic of the Congo"};
-        String[] PRKAliases = {"PRK", "North Korea", "Korea, North"};
-        String[] ROKAliases = {"ROK", "South Korea", "Korea, South"};
-        String[] MYAAliases = {"MYA", "Myanmar, Burma"};
-        String[] DRVAliases = {"DRV", "VNM", "RVN", "Vietnam", "Annam", "Cochin China", "Tonkin"};
-        String[] TANAliases = {"TAZ", "ZAN", "Tanzania", "Tanganyika", "Zanzibar"};
+        String[] DRCAliases = {"Congo, Democratic Republic of", "Congo, Democratic Republic of the", "Democratic Republic of the Congo", "DRC"};
+        String[] PRKAliases = {"North Korea", "Korea, North", "PRK"};
+        String[] ROKAliases = {"South Korea", "Korea, South", "ROK"};
+        String[] MYAAliases = {"Myanmar", "Burma", "MYA"};
+        String[] DRVAliases = {"Vietnam", "Annam", "Cochin China", "Tonkin", "DRV", "VNM", "RVN",};
+        String[] TANAliases = {"Tanzania", "Tanganyika", "Zanzibar", "TAZ", "ZAN"};
 
         ArrayList<String[]> exceptionsList = new ArrayList<String[]>();
         exceptionsList.add(DRCAliases);
