@@ -26,7 +26,7 @@ public class IRoadTrip {
         createStateNameEntries(stateNames);
         createBorderNameEntries(borders);
         getStateNameDistances(capdist);
-        //viewHashMap();
+        viewHashMap();
     }
 
     private void createStateNameEntries(FileReader stateNames) {
@@ -36,8 +36,7 @@ public class IRoadTrip {
             reader = new BufferedReader(stateNames);
             String line = reader.readLine();    //skip first line
 
-            line = reader.readLine();
-            while (line != null) {
+            for (line = reader.readLine(); line != null; line = reader.readLine()) {
                 //state_name.tsv == tab separated values
                 String[] fieldVals = line.split("\t", 0);
 
@@ -65,7 +64,7 @@ public class IRoadTrip {
 
             String line = reader.readLine();
 
-            while (line != null) {
+            for (line = reader.readLine(); line != null; line = reader.readLine()) {
                 String[] fieldVals = line.split("=|;", 0);
                 String countryKey = generateAliasEntries(fieldVals[0]);
 
@@ -91,10 +90,13 @@ public class IRoadTrip {
                     } 
 
                     String neighbourKey = generateAliasEntries(toAdd);
-                    countriesGraph.get(countryKey).addNeighbour(neighbourKey, distanceFromSource);
 
+                    Country c = countriesGraph.get(countryKey);
+
+                    if (c != null && neighbourKey != null) {
+                        c.addNeighbour(neighbourKey, distanceFromSource);
+                    }
                 }
-                line = reader.readLine();
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -108,17 +110,9 @@ public class IRoadTrip {
             reader = new BufferedReader(capdist);
             String line = reader.readLine();    //skip first line
 
-            line = reader.readLine();
-            while (line != null) {
+            for (line = reader.readLine(); line != null; line = reader.readLine()) {
                 //capdist.csv == comma separated values
                 String[] fieldVals = line.split(",", 0);
-
-                for (String val : fieldVals) {
-                    System.out.print(val + " ");
-                }
-                System.out.println();
-
-                System.out.println(fieldVals[1]);
 
                 //uses country codes from state_name.tsv
                 String countryKey = nameDict.get(fieldVals[1]);
@@ -126,13 +120,10 @@ public class IRoadTrip {
                 String neighbourKey = nameDict.get(fieldVals[3]);
 
                 Country c = countriesGraph.get(countryKey);
-                System.out.println(c);
-                c.addNeighbour(neighbourKey, distanceFromSource);
-                System.out.println(c);
-                
 
-                line = reader.readLine();
-                break;
+                if (c != null && neighbourKey != null) {
+                    c.addNeighbour(neighbourKey, distanceFromSource);
+                }
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -153,9 +144,6 @@ public class IRoadTrip {
         String[] DENAliases = {"Denmark", "Greenland", "DEN"};
         String[] CocosAliases = {"Cocos Islands", "Keeling Islands"};
         String[] BHMAliases = {"Bahamas", "Bahamas, The", "BHM"};
-        String [] DAMAliases = {"Dominica", "DMA"};
-        String [] GRNAliases = {"Grenada", "GRN"};
-        String [] SLUAliases = {"Saint Lucia", "SLU"};
 
         ArrayList<String[]> exceptionsList = new ArrayList<String[]>();
         exceptionsList.add(DRCAliases);
@@ -194,17 +182,18 @@ public class IRoadTrip {
         
         String repVal = toAdd.get(0);
 
-        if (!countriesGraph.containsKey(repVal)) {
-            Country c = new Country(repVal);
-            countriesGraph.put(repVal, c);
-        }
-
         //if state is not in dictionary, add it with representative country name as value
         for (String stateName : toAdd) {
             if (!nameDict.containsKey(stateName)) {
                 nameDict.put(stateName, repVal);
             }
         }
+
+        if (!countriesGraph.containsKey(repVal) && nameDict.containsValue(repVal)) {
+            Country c = new Country(repVal);
+            countriesGraph.put(repVal, c);
+        }
+
         return repVal;
     }
 
