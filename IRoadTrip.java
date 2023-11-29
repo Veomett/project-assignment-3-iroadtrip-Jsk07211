@@ -1,4 +1,5 @@
 import java.io.IOException;
+import java.util.Scanner;
 import java.util.HashMap;
 import java.util.StringTokenizer;
 import java.util.ArrayList;
@@ -11,22 +12,26 @@ import java.io.*;
 public class IRoadTrip {
     private HashMap<String, String> nameDict;
     private HashMap<String, Country> countriesGraph;
+
     public IRoadTrip (String [] args) throws IOException {
-        FileReader borders = new FileReader(args[0]);
-        FileReader capdist = new FileReader(args[1]);
-        FileReader stateNames = new FileReader(args[2]);
 
-        nameDict = new HashMap<String, String>();
-        countriesGraph = new HashMap<String, Country>();
-        populateHashMaps(borders, capdist, stateNames);
-    }
+        try {
+            FileReader borders = new FileReader(args[0]);
+            FileReader capdist = new FileReader(args[1]);
+            FileReader stateNames = new FileReader(args[2]);
 
-    private void populateHashMaps(FileReader borders, FileReader capdist, FileReader stateNames) {
-        createEntriesForNameExceptions();
-        createStateNameEntries(stateNames);
-        createBorderNameEntries(borders);
-        getStateNameDistances(capdist);
-        viewHashMap();
+            nameDict = new HashMap<String, String>();
+            countriesGraph = new HashMap<String, Country>();
+            
+            createEntriesForNameExceptions();
+            createStateNameEntries(stateNames);
+            createBorderNameEntries(borders);
+            getStateNameDistances(capdist);
+            viewHashMap();
+        } catch (FileNotFoundException e) {
+            System.out.println(e + "\nHalting execution...");
+            System.exit(-1);
+        }
     }
 
     private void createStateNameEntries(FileReader stateNames) {
@@ -42,7 +47,22 @@ public class IRoadTrip {
 
                 //no need to capture key value since no distances are found in this file
                 //also generate an alias for the code
-                generateAliasEntries(fieldVals[2] + "/" + fieldVals[1]);
+                ArrayList<String> cAdd = generateAliasEntries(fieldVals[2] + "/" + fieldVals[1]);
+
+                String repVal = cAdd.get(0);
+
+
+                //if state is not in dictionary, add it with representative country name as value
+                for (String stateName : cAdd) {
+                    if (!nameDict.containsKey(stateName)) {
+                        nameDict.put(stateName, repVal);
+                    }
+                }
+
+                if (!countriesGraph.containsKey(repVal)) {
+                    Country c = new Country(repVal);
+                    countriesGraph.put(repVal, c);
+                }
 
                 line = reader.readLine();
             }
@@ -66,7 +86,7 @@ public class IRoadTrip {
 
             for (line = reader.readLine(); line != null; line = reader.readLine()) {
                 String[] fieldVals = line.split("=|;", 0);
-                String countryKey = generateAliasEntries(fieldVals[0]);
+                ArrayList<String> countryKeys = generateAliasEntries(fieldVals[0]);
 
                 for (int i = 1; i < fieldVals.length; i++) {
                     if (fieldVals[i].strip().length() == 0) {
@@ -77,24 +97,20 @@ public class IRoadTrip {
                     matchNoAlias = noAlias.matcher(fieldVals[i].strip());
 
                     String toAdd = "";
-                    double distanceFromSource = 0;
 
                     if (matchAlias.find()) {
                         toAdd = matchAlias.group(1);
-                        distanceFromSource = Double.parseDouble(matchAlias.group(2).replaceAll(",", ""));
                     } 
                     
                     if (matchNoAlias.find()) {
                         toAdd = matchNoAlias.group(1);
-                        distanceFromSource = Double.parseDouble(matchNoAlias.group(2).replaceAll(",", ""));
                     } 
 
-                    String neighbourKey = generateAliasEntries(toAdd);
+                    ArrayList<String> cAdd = generateAliasEntries(toAdd);
 
-                    Country c = countriesGraph.get(countryKey);
-
-                    if (c != null && neighbourKey != null) {
-                        c.addNeighbour(neighbourKey, distanceFromSource);
+                    if (countriesGraph.containsKey(cAdd.get(0)) && countriesGraph.containsKey(countryKeys.get(0))) {
+                        Country c = countriesGraph.get(countryKeys.get(0));
+                        c.addNeighbour(cAdd.get(0));
                     }
                 }
             }
@@ -116,13 +132,13 @@ public class IRoadTrip {
 
                 //uses country codes from state_name.tsv
                 String countryKey = nameDict.get(fieldVals[1]);
-                Double distanceFromSource = Double.parseDouble(fieldVals[4]);
                 String neighbourKey = nameDict.get(fieldVals[3]);
+                Double distanceFromSource = Double.parseDouble(fieldVals[4]);
 
                 Country c = countriesGraph.get(countryKey);
 
-                if (c != null && neighbourKey != null) {
-                    c.addNeighbour(neighbourKey, distanceFromSource);
+                if (c != null && neighbourKey != null && c.getNeighbours().containsKey(neighbourKey)) {
+                    c.setNeighbourDistance(neighbourKey, distanceFromSource);
                 }
             }
         } catch (IOException e) {
@@ -142,7 +158,6 @@ public class IRoadTrip {
         String[] TANAliases = {"Tanzania", "Tanganyika", "Zanzibar", "TAZ", "ZAN"};
         String[] USAAliases = {"United States of America", "United States", "USA"};
         String[] DENAliases = {"Denmark", "Greenland", "DEN"};
-        String[] CocosAliases = {"Cocos Islands", "Keeling Islands"};
         String[] BHMAliases = {"Bahamas", "Bahamas, The", "BHM"};
 
         ArrayList<String[]> exceptionsList = new ArrayList<String[]>();
@@ -154,7 +169,6 @@ public class IRoadTrip {
         exceptionsList.add(TANAliases);
         exceptionsList.add(USAAliases);
         exceptionsList.add(DENAliases);
-        exceptionsList.add(CocosAliases);
         exceptionsList.add(BHMAliases);
 
         for (String[] aliasList : exceptionsList) {
@@ -168,7 +182,7 @@ public class IRoadTrip {
     }
 
     //Handle () aliases as well
-    private String generateAliasEntries(String toTokenise) {
+    private ArrayList<String> generateAliasEntries(String toTokenise) {
         ArrayList<String> toAdd = new ArrayList<String>();
 
         String[] alias = toTokenise.split("\\(|/", 0);
@@ -179,22 +193,7 @@ public class IRoadTrip {
                             .strip();
             toAdd.add(sClean);
         }
-        
-        String repVal = toAdd.get(0);
-
-        //if state is not in dictionary, add it with representative country name as value
-        for (String stateName : toAdd) {
-            if (!nameDict.containsKey(stateName)) {
-                nameDict.put(stateName, repVal);
-            }
-        }
-
-        if (!countriesGraph.containsKey(repVal) && nameDict.containsValue(repVal)) {
-            Country c = new Country(repVal);
-            countriesGraph.put(repVal, c);
-        }
-
-        return repVal;
+        return toAdd;
     }
 
     public void viewHashMap() {
@@ -207,13 +206,12 @@ public class IRoadTrip {
         }
     }
 
-    /*
     public int getDistance (String country1, String country2) {
-        // Replace with your code
-        return -1;
+        DijkstraAlgorithm dA = new DijkstraAlgorithm(countriesGraph, country1, country2);
+        return dA.createCountryHeap();
     }
 
-
+    /*
     public List<String> findPath (String country1, String country2) {
         // Replace with your code
         return null;
@@ -232,12 +230,21 @@ public class IRoadTrip {
 
     public static void main(String[] args) throws IOException {
         if (args.length == 3) {
-            try {
-                IRoadTrip a3 = new IRoadTrip(args);
-            } catch (FileNotFoundException e) {
-                System.out.println(e + "\nHalting execution...");
-                System.exit(-1);
+
+            IRoadTrip a3 = new IRoadTrip(args);
+            Scanner scan = new Scanner(System.in);
+
+            System.out.println("Please enter first country: ");
+            String country1 = scan.nextLine();
+            System.out.println("Please enter second country: ");
+            String country2 = scan.nextLine();
+
+            if (a3.getDistance(country1, country2) < 0) {
+                System.out.println("No path exists");
+            } else {
+                System.out.println("It works!");
             }
+
         } else {
             System.out.println("Invalid input");
         }

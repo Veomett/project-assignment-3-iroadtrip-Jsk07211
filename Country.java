@@ -15,14 +15,23 @@ public class Country implements Comparable<Country>{
         this.neighbours = new HashMap<String, Double>();
     }
 
-    public void addNeighbour(String key, Double value) {
+    public void addNeighbour(String key) {
         if (!neighbours.containsKey(key)){
-            neighbours.put(key, value);
+            //will be updated later
+            neighbours.put(key, null);
         }
+    }
+
+    public void setNeighbourDistance(String neighbour, Double distance) {
+        neighbours.replace(neighbour, distance);
     }
 
     public String getRepName() {
         return this.repName;
+    }
+
+    public HashMap<String, Double> getNeighbours() {
+        return this.neighbours;
     }
 
     @Override
