@@ -5,14 +5,14 @@ import java.util.Iterator;
 
 public class Country implements Comparable<Country>{
     private String repName;                         //representative name
-    private HashMap<String, Double> neighbours;    //countryName of neighbours and distance
-    private Double distanceFromSource;   
+    private HashMap<String, Integer> neighbours;    //countryName of neighbours and distance
+    private int distanceFromSource;   
 
     //Constructor for countries with >2 aliases
     public Country(String repName) {
         this.repName = repName;
-        this.distanceFromSource = Double.POSITIVE_INFINITY;
-        this.neighbours = new HashMap<String, Double>();
+        this.distanceFromSource = Integer.MAX_VALUE;
+        this.neighbours = new HashMap<String, Integer>();
     }
 
     public void addNeighbour(String key) {
@@ -22,33 +22,53 @@ public class Country implements Comparable<Country>{
         }
     }
 
-    public void setNeighbourDistance(String neighbour, Double distance) {
+    public void setNeighbourDistance(String neighbour, int distance) {
         neighbours.replace(neighbour, distance);
+    }
+
+    public void removeNullEntries() {
+        HashMap<String, Integer> placeholder = new HashMap<String, Integer>();
+        Set neighbourKeys = neighbours.keySet();
+
+        for (Object key : neighbourKeys) {
+            if (neighbours.get(key) != null) {
+                placeholder.put(((String)key), neighbours.get(key));
+            }
+        }
+        neighbours = placeholder;
     }
 
     public String getRepName() {
         return this.repName;
     }
 
-    public HashMap<String, Double> getNeighbours() {
+    public HashMap<String, Integer> getNeighbours() {
         return this.neighbours;
+    }
+
+    public int getDistanceFromSource() {
+        return this.distanceFromSource;
+    }
+
+    public void setDistanceFromSource(int newDist) {
+        this.distanceFromSource = newDist;
     }
 
     @Override
     public int compareTo(Country c) {
-        return Double.compare(this.distanceFromSource, c.distanceFromSource);
+        return Integer.compare(this.distanceFromSource, c.distanceFromSource);
     }
 
     @Override
     public String toString() {
         Set keys = neighbours.keySet();
-        Iterator i = keys.iterator();
+
         String toReturn = "\nNeighbours: ";
 
-        while (i.hasNext()) {
-            Object key = i.next();
+        for (Object key : keys) {
             toReturn += "neighbours[" + key + "]: " + neighbours.get(key) + "; ";
         }
+
         toReturn += "\n";
         return toReturn;
     }

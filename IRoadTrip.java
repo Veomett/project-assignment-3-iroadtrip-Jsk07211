@@ -7,6 +7,10 @@ import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 import java.util.Set;
 import java.util.Iterator;
+import java.util.PriorityQueue;
+import java.util.Deque;
+import java.util.LinkedList;
+import java.util.Collection;
 import java.io.*;
 
 public class IRoadTrip {
@@ -27,6 +31,7 @@ public class IRoadTrip {
             createStateNameEntries(stateNames);
             createBorderNameEntries(borders);
             getStateNameDistances(capdist);
+            cleanData();
             viewHashMap();
         } catch (FileNotFoundException e) {
             System.out.println(e + "\nHalting execution...");
@@ -59,12 +64,12 @@ public class IRoadTrip {
                     }
                 }
 
+                System.out.println(repVal);
+
                 if (!countriesGraph.containsKey(repVal)) {
                     Country c = new Country(repVal);
                     countriesGraph.put(repVal, c);
                 }
-
-                line = reader.readLine();
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -133,7 +138,7 @@ public class IRoadTrip {
                 //uses country codes from state_name.tsv
                 String countryKey = nameDict.get(fieldVals[1]);
                 String neighbourKey = nameDict.get(fieldVals[3]);
-                Double distanceFromSource = Double.parseDouble(fieldVals[4]);
+                int distanceFromSource = Integer.parseInt(fieldVals[4]);
 
                 Country c = countriesGraph.get(countryKey);
 
@@ -196,36 +201,102 @@ public class IRoadTrip {
         return toAdd;
     }
 
+    public void cleanData() {
+        Collection values = countriesGraph.values();
+
+        for (Object country : values) {
+            ((Country)country).removeNullEntries();
+        }
+    }
+
     public void viewHashMap() {
         Set keys = countriesGraph.keySet();
-        Iterator i = keys.iterator();
 
-        while (i.hasNext()) {
-            Object key = i.next();
+        for (Object key : keys) {
             System.out.println("countriesGraph[" + key + "]: " + countriesGraph.get(key));
         }
     }
 
+    public HashMap<Country, Integer> dijkstraAlgorithm(Country source, Country destination) {
+        PriorityQueue<Country> countryMinHeap = new PriorityQueue<>();
+
+        HashMap<Country, Integer> finalDistances = new HashMap<Country, Integer>();
+        
+        countryMinHeap.add(source);
+
+        while (!countryMinHeap.isEmpty()) {
+            Country c = countryMinHeap.poll();
+            Set neighbourKeys = c.getNeighbours().keySet();
+            Iterator iterate = neighbourKeys.iterator();
+
+            System.out.println(c.getRepName() + " has a distance of " + c.getDistanceFromSource());
+
+            while (iterate.hasNext()) {
+                Country neighbour = countriesGraph.get(iterate.next());
+                //neighbour saves distance from source as a string
+                int currentDistanceFromSource = c.getDistanceFromSource();
+                int distanceFromCurrent = neighbour.getNeighbours().get(c.getRepName());
+                neighbour.setDistanceFromSource(distanceFromCurrent);
+
+                System.out.println(neighbour.getRepName() + " has a distance of " + neighbour.getDistanceFromSource());
+
+                //if node has never been visited before
+                int totalDistance = currentDistanceFromSource + distanceFromCurrent;
+                if (!finalDistances.containsKey(neighbour)) {
+                    finalDistances.put(neighbour, totalDistance);
+                } else {
+                    if (totalDistance < finalDistances.get(neighbour)) {
+                        finalDistances.replace(neighbour, totalDistance);
+                    }
+                }
+            }
+        }
+        if (!finalDistances.containsKey(destination)) {
+                return null;
+        } else {
+            return finalDistances;
+        }
+    }
+
+
     public int getDistance (String country1, String country2) {
-        DijkstraAlgorithm dA = new DijkstraAlgorithm(countriesGraph, country1, country2);
-        return dA.createCountryHeap();
+        Country source = countriesGraph.get(country1);
+        Country destination = countriesGraph.get(country2);
+
+        source.setDistanceFromSource(0);
+
+        HashMap<Country, Integer> finalDistances = dijkstraAlgorithm(source, destination);
+
+        if (finalDistances == null) {
+            return -1;
+        }
+        return finalDistances.get(destination);
+    }
+
+    //public List<String> findPath (String country1, String country2) {
+    public void findPath (String country1, String country2) {
+        Country source = countriesGraph.get(country1);
+        Country destination = countriesGraph.get(country2);
+
+        source.setDistanceFromSource(0);
+
+        HashMap<Country, Integer> finalDistances = dijkstraAlgorithm(source, destination);
+
+        Set toRead = finalDistances.keySet();
+        Iterator i = toRead.iterator();
+
+        while (i.hasNext()) {
+            Object c = i.next();
+
+            System.out.println("finalDistances[" + ((Country)c).getRepName() + "]: " + finalDistances.get(((Country)c)));
+        }
     }
 
     /*
-    public List<String> findPath (String country1, String country2) {
-        // Replace with your code
-        return null;
-    }
-
-
     public void acceptUserInput() {
         // Replace with your code
         System.out.println("IRoadTrip - skeleton");
     }
-
-   public HashMap<String> getCountriesGraph() {
-        return this.countriesGraph;
-   }
    */
 
     public static void main(String[] args) throws IOException {
@@ -239,10 +310,12 @@ public class IRoadTrip {
             System.out.println("Please enter second country: ");
             String country2 = scan.nextLine();
 
-            if (a3.getDistance(country1, country2) < 0) {
+            int distance = a3.getDistance(country1, country2);
+
+            if (distance < 0) {
                 System.out.println("No path exists");
             } else {
-                System.out.println("It works!");
+                System.out.println(country1 + "is ~" + distance + " km from " + country2);
             }
 
         } else {
