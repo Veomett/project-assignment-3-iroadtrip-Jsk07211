@@ -32,13 +32,10 @@ public class DijkstraAlgorithm {
         while (!path.isEmpty()) {
             Country c = path.poll();
 
-            //System.out.println("Removing: " + c.getRepName() + " of distance " + c.getDistanceFromSource());
-
             if (!finalDistances.containsKey(c)) {
                 finalDistances.put(c, c.getDistanceFromSource());
                 countriesVisited.put(c.getRepName(), c.getPrevCountry().getRepName());
             } else {
-                //finalised, won't get any smaller value
                 continue;
             }
 
@@ -48,16 +45,21 @@ public class DijkstraAlgorithm {
                 Country n = countriesGraph.get((String)neighbour);
                 int distanceFromHead = n.getNeighbours().get(c.getRepName());
                 int distanceFromSource = distanceFromHead + c.getDistanceFromSource();
-                n.setPrevCountry(c);
-                n.setDistanceFromSource(distanceFromSource);
 
-                //String concatenation as key value pair
-                String cnEdgeStr = c.getRepName() + n.getRepName();
-                String ncEdgeStr = n.getRepName() + c.getRepName();
+                //Only add to min heap if this route is faster
+                if (distanceFromSource < n.getDistanceFromSource()) {
+                    n.setPrevCountry(c);
+                    n.setDistanceFromSource(distanceFromSource);
 
-                if (!visitedEdges.containsKey(cnEdgeStr) && !visitedEdges.containsKey(ncEdgeStr)) {
-                    visitedEdges.put(cnEdgeStr, ncEdgeStr);
-                    path.add(n);
+                    //String concatenation as key value pair
+                    String cnEdgeStr = c.getRepName() + n.getRepName();
+                    String ncEdgeStr = n.getRepName() + c.getRepName();
+
+                    //Never visited this edge before
+                    if (!visitedEdges.containsKey(cnEdgeStr) && !visitedEdges.containsKey(ncEdgeStr)) {
+                        visitedEdges.put(cnEdgeStr, ncEdgeStr);
+                        path.add(n);
+                    }
                 }
             }
         }

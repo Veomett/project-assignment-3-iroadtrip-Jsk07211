@@ -35,8 +35,6 @@ public class TextCleaner {
                     }
                 }
 
-                System.out.println(repVal);
-
                 if (!countriesGraph.containsKey(repVal)) {
                     Country c = new Country(repVal);
                     countriesGraph.put(repVal, c);
@@ -138,7 +136,7 @@ public class TextCleaner {
         String[] DRCAliases = {"Congo, Democratic Republic of", "Congo, Democratic Republic of the", "Democratic Republic of the Congo", "DRC"};
         String[] PRKAliases = {"North Korea", "Korea, North", "PRK"};
         String[] ROKAliases = {"South Korea", "Korea, South", "Korea", "ROK", "KOR"};
-        String[] MYAAliases = {"Myanmar", "Burma", "MYA"};
+        String[] MYAAliases = {"Burma", "Myanmar", "MYA"};
         String[] DRVAliases = {"Vietnam", "Annam", "Cochin China", "Tonkin", "DRV", "VNM", "RVN",};
         String[] TANAliases = {"Tanzania", "Tanganyika", "Zanzibar", "TAZ", "ZAN"};
         String[] USAAliases = {"United States of America", "United States", "USA"};

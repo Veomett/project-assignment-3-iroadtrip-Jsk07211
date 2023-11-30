@@ -33,7 +33,6 @@ public class IRoadTrip {
             TextCleaner.createBorderNameEntries(borders, nameDict, countriesGraph);
             TextCleaner.getStateNameDistances(capdist, nameDict, countriesGraph);
             TextCleaner.cleanData(countriesGraph);
-            TextCleaner.viewHashMap(countriesGraph);
         } catch (FileNotFoundException e) {
             System.out.println(e + "\nHalting execution...");
             System.exit(-1);
@@ -66,27 +65,17 @@ public class IRoadTrip {
         return toReturn;
     }
 
-    /*
     public void acceptUserInput() {
-        // Replace with your code
-        System.out.println("IRoadTrip - skeleton");
-    }
-   */
+        Scanner scan = new Scanner(System.in);
+        String userInput = "";
 
-    public void printMenu() {
-        System.out.println("Please choose from the following options: ");
-        System.out.println("1: Get distance between two countries");
-        System.out.println("2: Get path between two countries");
-    }
+        while (true) {
+            System.out.print("Choice: ");
+            userInput = scan.nextLine();
 
-    public static void main(String[] args) throws IOException {
-        if (args.length == 3) {
-
-            IRoadTrip a3 = new IRoadTrip(args);
-            Scanner scan = new Scanner(System.in);
-
-            a3.printMenu();
-            String userInput = scan.nextLine();
+            if (userInput.toUpperCase().equals("EXIT")) {
+                break;
+            }
 
             while (!userInput.equals("1") && !userInput.equals("2")) {
                 System.out.println("Invalid input. Choose an option between 1-2: ");
@@ -94,16 +83,31 @@ public class IRoadTrip {
             }
 
             System.out.println("Please enter first country: ");
-            String country1 = scan.nextLine();
+            String input1 = scan.nextLine();
+
+            while (!nameDict.containsKey(input1)) {
+                System.out.println("Invalid country name. Please enter a valid country name.");
+                input1 = scan.nextLine();
+            }
+
+            String country1 = nameDict.get(input1);
+
             System.out.println("Please enter second country: ");
-            String country2 = scan.nextLine();
+            String input2 = scan.nextLine();
+
+            while (!nameDict.containsKey(input2)) {
+                System.out.println("Invalid country name. Please enter a valid country name.");
+                input2 = scan.nextLine();
+            }
+
+            String country2 = nameDict.get(input2);
 
             if (userInput.equals("1")) {
-                int distance = a3.getDistance(country1, country2);
+                int distance = getDistance(country1, country2);
 
                 System.out.println(distance);
             } else {    //userInput == 2
-                List<String> path = a3.findPath(country1, country2);
+                List<String> path = findPath(country1, country2);
 
                 if (path == null) {
                     System.out.println("No path exists");
@@ -113,9 +117,27 @@ public class IRoadTrip {
                     }
                 }
             }
+        }
+    }
+
+
+    public void printMenu() {
+        System.out.println("Please choose from the following options: ");
+        System.out.println("1: Get distance between two countries");
+        System.out.println("2: Get path between two countries");
+        System.out.println("EXIT: Exit Program");
+    }
+
+    public static void main(String[] args) throws IOException {
+        if (args.length == 3) {
+
+            IRoadTrip a3 = new IRoadTrip(args);
+
+            a3.printMenu();
+            a3.acceptUserInput();
+
         } else {
             System.out.println("Invalid input");
         }
     }
 }
-
