@@ -7,12 +7,14 @@ public class Country implements Comparable<Country>{
     private String repName;                         //representative name
     private HashMap<String, Integer> neighbours;    //countryName of neighbours and distance
     private int distanceFromSource;   
+    private Country prevCountry;
 
     //Constructor for countries with >2 aliases
     public Country(String repName) {
         this.repName = repName;
         this.distanceFromSource = Integer.MAX_VALUE;
         this.neighbours = new HashMap<String, Integer>();
+        this.prevCountry = null;
     }
 
     public void addNeighbour(String key) {
@@ -50,8 +52,16 @@ public class Country implements Comparable<Country>{
         return this.distanceFromSource;
     }
 
+    public Country getPrevCountry() {
+        return this.prevCountry;
+    }
+
     public void setDistanceFromSource(int newDist) {
         this.distanceFromSource = newDist;
+    }
+
+    public void setPrevCountry(Country prevCountry) {
+        this.prevCountry = prevCountry;
     }
 
     @Override

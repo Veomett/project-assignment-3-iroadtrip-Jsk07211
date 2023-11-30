@@ -1,6 +1,7 @@
 import java.util.PriorityQueue;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.Set;
 import java.util.Collection;
@@ -9,6 +10,7 @@ public class DijkstraAlgorithm {
     private HashMap<String, Country> countriesGraph;
     private Country source;
     private Country destination;
+    private HashMap<String, String> countriesVisited;
 
     public DijkstraAlgorithm(HashMap<String, Country> countriesGraph, Country source, Country destination) {
         this.countriesGraph = countriesGraph;
@@ -17,12 +19,14 @@ public class DijkstraAlgorithm {
     }
 
     //Use BFS to add to countryHeap
-    public HashMap<Country, Integer> runAlgorithm() {
+    public int runAlgorithm() {
         PriorityQueue<Country> path = new PriorityQueue<Country>();
         HashMap<Country, Integer> finalDistances = new HashMap<Country, Integer>();
         HashMap<String, String> visitedEdges = new HashMap<String, String>();
+        countriesVisited = new HashMap<String, String>();
 
         source.setDistanceFromSource(0);
+        source.setPrevCountry(source);
         path.add(source);
 
         while (!path.isEmpty()) {
@@ -32,6 +36,7 @@ public class DijkstraAlgorithm {
 
             if (!finalDistances.containsKey(c)) {
                 finalDistances.put(c, c.getDistanceFromSource());
+                countriesVisited.put(c.getRepName(), c.getPrevCountry().getRepName());
             } else {
                 //finalised, won't get any smaller value
                 continue;
@@ -43,12 +48,14 @@ public class DijkstraAlgorithm {
                 Country n = countriesGraph.get((String)neighbour);
                 int distanceFromHead = n.getNeighbours().get(c.getRepName());
                 int distanceFromSource = distanceFromHead + c.getDistanceFromSource();
+                n.setPrevCountry(c);
                 n.setDistanceFromSource(distanceFromSource);
 
                 //String concatenation as key value pair
                 String cnEdgeStr = c.getRepName() + n.getRepName();
                 String ncEdgeStr = n.getRepName() + c.getRepName();
-                if (!visitedEdges.containsKey(cnEdgeStr) && !visitedEdges.containsValue(ncEdgeStr)) {
+
+                if (!visitedEdges.containsKey(cnEdgeStr) && !visitedEdges.containsKey(ncEdgeStr)) {
                     visitedEdges.put(cnEdgeStr, ncEdgeStr);
                     path.add(n);
                 }
@@ -57,9 +64,31 @@ public class DijkstraAlgorithm {
 
         //no path exists
         if (destination.getDistanceFromSource() == Integer.MAX_VALUE) {
-            return null;
+            return -1;
         } else {
-            return finalDistances;
+            return finalDistances.get(destination);
         }
+    }
+
+    public LinkedList<String> getPath() {
+        //we can constantly insert at start
+        LinkedList<String> toReturn = new LinkedList<String>();
+        String toSearch = destination.getRepName();
+
+        while (toSearch != source.getRepName()) {
+            String prevCountry = countriesVisited.get(toSearch);
+            int distance = countriesGraph.get(toSearch).getNeighbours().get(prevCountry);
+
+            
+            String toAdd = "";
+            toAdd = "* " + prevCountry + " --> " + toSearch + " (" +
+                    Integer.toString(distance) + " km.)\n";
+            
+            toReturn.addFirst(toAdd);
+            
+            toSearch = prevCountry;
+        }
+
+        return toReturn;
     }
 }
