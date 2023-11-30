@@ -17,13 +17,24 @@ import java.io.*;
 public class IRoadTrip {
     protected HashMap<String, String> nameDict;
     protected HashMap<String, Country> countriesGraph;
+    private HashMap<String, String> countriesVisited;
+    private String bordersfd;
+    private String capdistfd;
+    private String stateNamesfd;
 
     public IRoadTrip (String [] args) throws IOException {
+        this.bordersfd = args[0];
+        this.capdistfd = args[1];
+        this.stateNamesfd = args[2];
 
+        setFiles();
+    }
+
+    public void setFiles() {
         try {
-            FileReader borders = new FileReader(args[0]);
-            FileReader capdist = new FileReader(args[1]);
-            FileReader stateNames = new FileReader(args[2]);
+            FileReader borders = new FileReader(bordersfd);
+            FileReader capdist = new FileReader(capdistfd);
+            FileReader stateNames = new FileReader(stateNamesfd);
 
             nameDict = new HashMap<String, String>();
             countriesGraph = new HashMap<String, Country>();
@@ -40,92 +51,145 @@ public class IRoadTrip {
     }
 
     public int getDistance (String country1, String country2) {
+        PriorityQueue<Country> path = new PriorityQueue<Country>();
+        HashMap<Country, Integer> finalDistances = new HashMap<Country, Integer>();
+        HashMap<String, String> visitedEdges = new HashMap<String, String>();
+        countriesVisited = new HashMap<String, String>();
+
         Country source = countriesGraph.get(country1);
         Country destination = countriesGraph.get(country2);
 
-        DijkstraAlgorithm dA = new DijkstraAlgorithm(countriesGraph, source, destination);
-        int distance = dA.runAlgorithm();
+        source.setDistanceFromSource(0);
+        source.setPrevCountry(source);
+        path.add(source);
 
-        return distance;
+        while (!path.isEmpty()) {
+            Country c = path.poll();
+
+            if (!finalDistances.containsKey(c)) {
+                finalDistances.put(c, c.getDistanceFromSource());
+                countriesVisited.put(c.getRepName(), c.getPrevCountry().getRepName());
+            } else {
+                continue;
+            }
+
+            Collection neighbours = c.getNeighbours().keySet();
+
+            for (Object neighbour : neighbours) {
+                Country n = countriesGraph.get((String)neighbour);
+                int distanceFromHead = n.getNeighbours().get(c.getRepName());
+                int distanceFromSource = distanceFromHead + c.getDistanceFromSource();
+
+                //Only add to min heap if this route is faster
+                if (distanceFromSource < n.getDistanceFromSource()) {
+                    n.setPrevCountry(c);
+                    n.setDistanceFromSource(distanceFromSource);
+
+                    //String concatenation as key value pair
+                    String cnEdgeStr = c.getRepName() + n.getRepName();
+                    String ncEdgeStr = n.getRepName() + c.getRepName();
+
+                    //Never visited this edge before
+                    if (!visitedEdges.containsKey(cnEdgeStr) && !visitedEdges.containsKey(ncEdgeStr)) {
+                        visitedEdges.put(cnEdgeStr, ncEdgeStr);
+                        path.add(n);
+                    }
+                }
+            }
+        }
+
+        //no path exists
+        if (destination.getDistanceFromSource() == Integer.MAX_VALUE) {
+            return -1;
+        } else {
+            return finalDistances.get(destination);
+        }
     }
 
     public List<String> findPath (String country1, String country2) {
         Country source = countriesGraph.get(country1);
         Country destination = countriesGraph.get(country2);
 
-        DijkstraAlgorithm dA = new DijkstraAlgorithm(countriesGraph, source, destination);
-        int distance = dA.runAlgorithm();
+        int distance = getDistance(country1, country2);
 
         if (distance < 0) {
             return null;
         }
 
-        List<String> toReturn = dA.getPath();
+        //we can constantly insert at start
+        LinkedList<String> toReturn = new LinkedList<String>();
+        String toSearch = destination.getRepName();
 
+        while (toSearch != source.getRepName()) {
+            String prevCountry = countriesVisited.get(toSearch);
+            int dist = countriesGraph.get(toSearch).getNeighbours().get(prevCountry);
+
+            
+            String toAdd = "";
+            toAdd = "* " + prevCountry + " --> " + toSearch + " (" +
+                    Integer.toString(dist) + " km.)";
+            
+            toReturn.addFirst(toAdd);
+            
+            toSearch = prevCountry;
+        }
         return toReturn;
     }
 
     public void acceptUserInput() {
         Scanner scan = new Scanner(System.in);
-        String userInput = "";
 
         while (true) {
-            System.out.print("Choice: ");
-            userInput = scan.nextLine();
+            System.out.print("Enter the name of the first country (type EXIT to quit): ");
+            String input1 = scan.nextLine();
 
-            if (userInput.toUpperCase().equals("EXIT")) {
+            if (input1.toUpperCase().equals("EXIT")) {
                 break;
             }
 
-            while (!userInput.equals("1") && !userInput.equals("2")) {
-                System.out.println("Invalid input. Choose an option between 1-2: ");
-                userInput = scan.nextLine();
-            }
-
-            System.out.println("Please enter first country: ");
-            String input1 = scan.nextLine();
-
             while (!nameDict.containsKey(input1)) {
                 System.out.println("Invalid country name. Please enter a valid country name.");
+                System.out.print("Enter the name of the first country (type EXIT to quit): ");
                 input1 = scan.nextLine();
+
+                if (input1.toUpperCase().equals("EXIT")) {
+                    break;
+                }
             }
 
             String country1 = nameDict.get(input1);
 
-            System.out.println("Please enter second country: ");
+            System.out.print("Enter the name of the second country (type EXIT to quit): ");
             String input2 = scan.nextLine();
+
+            if (input2.toUpperCase().equals("EXIT")) {
+                break;
+            }
 
             while (!nameDict.containsKey(input2)) {
                 System.out.println("Invalid country name. Please enter a valid country name.");
+                System.out.print("Enter the name of the second country (type EXIT to quit): ");
                 input2 = scan.nextLine();
+
+                if (input2.toUpperCase().equals("EXIT")) {
+                    break;
+                }
             }
 
             String country2 = nameDict.get(input2);
 
-            if (userInput.equals("1")) {
-                int distance = getDistance(country1, country2);
+            List<String> path = findPath(country1, country2);
 
-                System.out.println(distance);
-            } else {    //userInput == 2
-                List<String> path = findPath(country1, country2);
-
-                if (path == null) {
-                    System.out.println("No path exists");
-                } else {
-                    for (String text : path) {
-                        System.out.println(text);
-                    }
+            if (path == null) {
+                System.out.println("No path exists");
+            } else {
+                for (String text : path) {
+                    System.out.println(text);
                 }
             }
+            //reread files since iterator loses information
+            setFiles();
         }
-    }
-
-
-    public void printMenu() {
-        System.out.println("Please choose from the following options: ");
-        System.out.println("1: Get distance between two countries");
-        System.out.println("2: Get path between two countries");
-        System.out.println("EXIT: Exit Program");
     }
 
     public static void main(String[] args) throws IOException {
@@ -133,7 +197,6 @@ public class IRoadTrip {
 
             IRoadTrip a3 = new IRoadTrip(args);
 
-            a3.printMenu();
             a3.acceptUserInput();
 
         } else {
