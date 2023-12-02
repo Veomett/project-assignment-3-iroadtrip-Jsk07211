@@ -144,7 +144,8 @@ public class IRoadTrip {
             String input1 = scan.nextLine();
 
             if (input1.toUpperCase().equals("EXIT")) {
-                break;
+                System.out.println("Thank you for using our services!");
+                System.exit(0);
             }
 
             while (!nameDict.containsKey(input1)) {
@@ -153,17 +154,17 @@ public class IRoadTrip {
                 input1 = scan.nextLine();
 
                 if (input1.toUpperCase().equals("EXIT")) {
-                    break;
+                    System.out.println("Thank you for using our services!");
+                    System.exit(0);
                 }
             }
-
-            String country1 = nameDict.get(input1);
 
             System.out.print("Enter the name of the second country (type EXIT to quit): ");
             String input2 = scan.nextLine();
 
             if (input2.toUpperCase().equals("EXIT")) {
-                break;
+                System.out.println("Thank you for using our services!");
+                System.exit(0);
             }
 
             while (!nameDict.containsKey(input2)) {
@@ -172,10 +173,12 @@ public class IRoadTrip {
                 input2 = scan.nextLine();
 
                 if (input2.toUpperCase().equals("EXIT")) {
-                    break;
+                    System.out.println("Thank you for using our services!");
+                    System.exit(0);
                 }
             }
 
+            String country1 = nameDict.get(input1);
             String country2 = nameDict.get(input2);
 
             List<String> path = findPath(country1, country2);
