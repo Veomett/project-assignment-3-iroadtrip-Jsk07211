@@ -123,7 +123,7 @@ public class IRoadTrip {
         while (toSearch != source.getRepName()) {
             String prevCountry = countriesVisited.get(toSearch);
             int dist = countriesGraph.get(toSearch).getNeighbours().get(prevCountry);
-
+            countriesGraph.get(toSearch).setDistanceFromSource(Integer.MAX_VALUE);
             
             String toAdd = "";
             toAdd = "* " + prevCountry + " --> " + toSearch + " (" +
@@ -190,8 +190,6 @@ public class IRoadTrip {
                     System.out.println(text);
                 }
             }
-            //reread files since iterator loses information
-            setFiles();
         }
     }
 
