@@ -9,6 +9,9 @@ import java.util.LinkedList;
 import java.util.Collection;
 import java.io.*;
 
+//FIXME: borders.txt read countries regardless, state_name.tsv 
+//Can probably do a final loop at the end to add back to nameDict afterwards
+
 public class TextCleaner {
     public static void createStateNameEntries(FileReader stateNames, HashMap<String, String> nameDict, HashMap<String, Country> countriesGraph) {
         BufferedReader reader;
@@ -35,6 +38,7 @@ public class TextCleaner {
                     }
                 }
 
+                //creates country objects for those with valid
                 if (!countriesGraph.containsKey(repVal)) {
                     Country c = new Country(repVal);
                     countriesGraph.put(repVal, c);
@@ -82,17 +86,21 @@ public class TextCleaner {
 
                     ArrayList<String> cAdd = generateAliasEntries(toAdd, countriesGraph);
 
-                    if (countriesGraph.containsKey(cAdd.get(0)) && countriesGraph.containsKey(countryKeys.get(0))) {
-                        String countryStr = countryKeys.get(0);
-                        String neighbourStr = cAdd.get(0);
-                        Country c = countriesGraph.get(countryStr);
-                        c.addNeighbour(neighbourStr);
+                    //ensure using representative name for the country names
+                    if (nameDict.containsKey(countryKeys.get(0)) && nameDict.containsKey(cAdd.get(0))) {
+                        String countryKey = nameDict.get(countryKeys.get(0));
+                        String neighbourKey = nameDict.get(cAdd.get(0));
 
-                        if (!countriesGraph.get(neighbourStr).getNeighbours().containsKey(countryStr)) {
-                            Country n = countriesGraph.get(neighbourStr);
-                            n.addNeighbour(countryStr);
+                        if (countriesGraph.containsKey(countryKey)) {
+                            Country c = countriesGraph.get(countryKey);
+                            Country n = countriesGraph.get(neighbourKey);
+
+                            //Add border indicator to neighbour hashmap of both countries
+                            c.addNeighbour(neighbourKey);
+                            n.addNeighbour(countryKey);
                         }
                     }
+
                 }
             }
         } catch (IOException e) {
@@ -155,11 +163,12 @@ public class TextCleaner {
         exceptionsList.add(BHMAliases);
 
         for (String[] aliasList : exceptionsList) {
-            Country c = new Country(aliasList[0]);
-            countriesGraph.put(aliasList[0], c);
+            String repName = aliasList[0].toUpperCase();
+            Country c = new Country(repName);
+            countriesGraph.put(repName, c);
 
             for (String val : aliasList) {
-                nameDict.put(val, aliasList[0]);
+                nameDict.put(val.toUpperCase(), repName);
             }
         }
     }
@@ -174,7 +183,7 @@ public class TextCleaner {
             String sClean = s
                             .replaceAll("\\)", "")
                             .strip();
-            toAdd.add(sClean);
+            toAdd.add(sClean.toUpperCase());
         }
         return toAdd;
     }
@@ -184,6 +193,13 @@ public class TextCleaner {
 
         for (Object country : values) {
             ((Country)country).removeNullEntries();
+        }
+    }
+
+    public static void restoreDefault(Country[] toRestore) {
+        for (Country country : toRestore) {
+            country.setDistanceFromSource(Integer.MAX_VALUE);
+            country.setPrevCountry(null);
         }
     }
 

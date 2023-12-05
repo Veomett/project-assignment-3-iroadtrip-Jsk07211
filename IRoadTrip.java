@@ -44,6 +44,7 @@ public class IRoadTrip {
             TextCleaner.createBorderNameEntries(borders, nameDict, countriesGraph);
             TextCleaner.getStateNameDistances(capdist, nameDict, countriesGraph);
             TextCleaner.cleanData(countriesGraph);
+            TextCleaner.viewHashMap(countriesGraph);
         } catch (FileNotFoundException e) {
             System.out.println(e + "\nHalting execution...");
             System.exit(-1);
@@ -53,7 +54,7 @@ public class IRoadTrip {
     public int getDistance (String country1, String country2) {
         PriorityQueue<Country> path = new PriorityQueue<Country>();
         HashMap<Country, Integer> finalDistances = new HashMap<Country, Integer>();
-        HashMap<String, String> visitedEdges = new HashMap<String, String>();
+        HashMap<String, Country[]> visitedEdges = new HashMap<String, Country[]>();
         countriesVisited = new HashMap<String, String>();
 
         Country source = countriesGraph.get(country1);
@@ -89,21 +90,34 @@ public class IRoadTrip {
                     String cnEdgeStr = c.getRepName() + n.getRepName();
                     String ncEdgeStr = n.getRepName() + c.getRepName();
 
+                    Country[] countryPair = {c, n};
+
                     //Never visited this edge before
                     if (!visitedEdges.containsKey(cnEdgeStr) && !visitedEdges.containsKey(ncEdgeStr)) {
-                        visitedEdges.put(cnEdgeStr, ncEdgeStr);
+                        visitedEdges.put(cnEdgeStr, countryPair);
                         path.add(n);
                     }
                 }
             }
         }
+        
+        int travelDist = 0;
 
         //no path exists
         if (destination.getDistanceFromSource() == Integer.MAX_VALUE) {
-            return -1;
+            travelDist = -1;
         } else {
-            return finalDistances.get(destination);
+            travelDist = finalDistances.get(destination);
         }
+
+        //Restore countriesGraph back to default
+        Collection<Country[]> visitedKeys = visitedEdges.values();
+
+        for (Country[] visited : visitedKeys) {
+            TextCleaner.restoreDefault(visited);
+        }
+
+        return travelDist;
     }
 
     public List<String> findPath (String country1, String country2) {
@@ -123,7 +137,9 @@ public class IRoadTrip {
         while (toSearch != source.getRepName()) {
             String prevCountry = countriesVisited.get(toSearch);
             int dist = countriesGraph.get(toSearch).getNeighbours().get(prevCountry);
-            countriesGraph.get(toSearch).setDistanceFromSource(Integer.MAX_VALUE);
+
+            
+            //countriesGraph.get(toSearch).setDistanceFromSource(Integer.MAX_VALUE);
             
             String toAdd = "";
             toAdd = "* " + prevCountry + " --> " + toSearch + " (" +
@@ -141,9 +157,9 @@ public class IRoadTrip {
 
         while (true) {
             System.out.print("Enter the name of the first country (type EXIT to quit): ");
-            String input1 = scan.nextLine();
+            String input1 = scan.nextLine().toUpperCase();
 
-            if (input1.toUpperCase().equals("EXIT")) {
+            if (input1.equals("EXIT")) {
                 System.out.println("Thank you for using our services!");
                 System.exit(0);
             }
@@ -151,18 +167,18 @@ public class IRoadTrip {
             while (!nameDict.containsKey(input1)) {
                 System.out.println("Invalid country name. Please enter a valid country name.");
                 System.out.print("Enter the name of the first country (type EXIT to quit): ");
-                input1 = scan.nextLine();
+                input1 = scan.nextLine().toUpperCase();
 
-                if (input1.toUpperCase().equals("EXIT")) {
+                if (input1.equals("EXIT")) {
                     System.out.println("Thank you for using our services!");
                     System.exit(0);
                 }
             }
 
             System.out.print("Enter the name of the second country (type EXIT to quit): ");
-            String input2 = scan.nextLine();
+            String input2 = scan.nextLine().toUpperCase();
 
-            if (input2.toUpperCase().equals("EXIT")) {
+            if (input2.equals("EXIT")) {
                 System.out.println("Thank you for using our services!");
                 System.exit(0);
             }
@@ -170,7 +186,7 @@ public class IRoadTrip {
             while (!nameDict.containsKey(input2)) {
                 System.out.println("Invalid country name. Please enter a valid country name.");
                 System.out.print("Enter the name of the second country (type EXIT to quit): ");
-                input2 = scan.nextLine();
+                input2 = scan.nextLine().toUpperCase();
 
                 if (input2.toUpperCase().equals("EXIT")) {
                     System.out.println("Thank you for using our services!");
@@ -190,6 +206,7 @@ public class IRoadTrip {
                     System.out.println(text);
                 }
             }
+            setFiles();
         }
     }
 
