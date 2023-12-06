@@ -24,9 +24,14 @@ public class TextCleaner {
                 //state_name.tsv == tab separated values
                 String[] fieldVals = line.split("\t", 0);
 
+                //if end date of state != 2020, don't add
+                if (!fieldVals[4].contains("2020")) {
+                    continue;
+                }
+
                 //no need to capture key value since no distances are found in this file
                 //also generate an alias for the code
-                ArrayList<String> cAdd = generateAliasEntries(fieldVals[2] + "/" + fieldVals[1], countriesGraph);
+                ArrayList<String> cAdd = generateAliasEntries(fieldVals[2] + "/" + fieldVals[1]);
 
                 String repVal = cAdd.get(0);
 
@@ -64,7 +69,7 @@ public class TextCleaner {
 
             for (line = reader.readLine(); line != null; line = reader.readLine()) {
                 String[] fieldVals = line.split("=|;", 0);
-                ArrayList<String> countryKeys = generateAliasEntries(fieldVals[0], countriesGraph);
+                ArrayList<String> countryKeys = generateAliasEntries(fieldVals[0]);
 
                 for (int i = 1; i < fieldVals.length; i++) {
                     if (fieldVals[i].strip().length() == 0) {
@@ -84,7 +89,7 @@ public class TextCleaner {
                         toAdd = matchNoAlias.group(1);
                     } 
 
-                    ArrayList<String> cAdd = generateAliasEntries(toAdd, countriesGraph);
+                    ArrayList<String> cAdd = generateAliasEntries(toAdd);
 
                     //ensure using representative name for the country names
                     if (nameDict.containsKey(countryKeys.get(0)) && nameDict.containsKey(cAdd.get(0))) {
@@ -100,7 +105,6 @@ public class TextCleaner {
                             n.addNeighbour(countryKey);
                         }
                     }
-
                 }
             }
         } catch (IOException e) {
@@ -145,22 +149,22 @@ public class TextCleaner {
         String[] PRKAliases = {"North Korea", "Korea, North", "PRK"};
         String[] ROKAliases = {"South Korea", "Korea, South", "Korea", "ROK", "KOR"};
         String[] MYAAliases = {"Burma", "Myanmar", "MYA"};
-        String[] DRVAliases = {"Vietnam", "Annam", "Cochin China", "Tonkin", "DRV", "VNM", "RVN",};
-        String[] TANAliases = {"Tanzania", "Tanganyika", "Zanzibar", "TAZ", "ZAN"};
         String[] USAAliases = {"United States of America", "United States", "USA"};
         String[] DENAliases = {"Denmark", "Greenland", "DEN"};
         String[] BHMAliases = {"Bahamas", "Bahamas, The", "BHM"};
+        String[] UKGAliases = {"United Kingdom", "UK", "UKG"};
+        String[] DRVAliases = {"Vietnam, Democratic Republic of", "Vietnam", "DRV"};
 
         ArrayList<String[]> exceptionsList = new ArrayList<String[]>();
         exceptionsList.add(DRCAliases);
         exceptionsList.add(PRKAliases);
         exceptionsList.add(ROKAliases);
         exceptionsList.add(MYAAliases);
-        exceptionsList.add(DRVAliases);
-        exceptionsList.add(TANAliases);
         exceptionsList.add(USAAliases);
         exceptionsList.add(DENAliases);
         exceptionsList.add(BHMAliases);
+        exceptionsList.add(UKGAliases);
+        exceptionsList.add(DRVAliases);
 
         for (String[] aliasList : exceptionsList) {
             String repName = aliasList[0].toUpperCase();
@@ -174,7 +178,7 @@ public class TextCleaner {
     }
     
     //Handle () aliases as well
-    public static ArrayList<String> generateAliasEntries(String toTokenise, HashMap<String, Country> countriesGraph) {
+    public static ArrayList<String> generateAliasEntries(String toTokenise) {
         ArrayList<String> toAdd = new ArrayList<String>();
 
         String[] alias = toTokenise.split("\\(|/", 0);
@@ -203,7 +207,78 @@ public class TextCleaner {
         }
     }
 
-    public static void viewHashMap(HashMap<String, Country> countriesGraph) {
+    public static void getValidCountriesWithoutCodes(FileReader borders, HashMap<String, String> nameDict) {
+        Pattern hasAlias = Pattern.compile("^([a-zA-Z\\-' ]+ \\([a-zA-Z ]+\\)) ([0-9,.]+) km$");
+        Pattern noAlias = Pattern.compile("^([a-zA-Z\\-' ]+) ([0-9,.]+) km$");
+        Matcher matchAlias;
+        Matcher matchNoAlias;
+
+        BufferedReader reader;
+
+        try{
+            reader = new BufferedReader(borders);
+
+            String line = reader.readLine();
+
+            for (line = reader.readLine(); line != null; line = reader.readLine()) {
+                String[] fieldVals = line.split("=|;", 0);
+                ArrayList<String> countryKeys = generateAliasEntries(fieldVals[0]);
+
+                String repName = ""; 
+
+                if (nameDict.containsKey(countryKeys.get(0).toUpperCase())) {
+                    repName = nameDict.get(countryKeys.get(0).toUpperCase());
+                } else {
+                    repName = countryKeys.get(0).toUpperCase();
+                }
+
+                for (String countryName : countryKeys) {
+                    if (!nameDict.containsKey(countryName.toUpperCase())) {
+                        nameDict.put(countryName.toUpperCase(), repName);
+                    }
+                }
+
+                for (int i = 1; i < fieldVals.length; i++) {
+                    if (fieldVals[i].strip().length() == 0) {
+                        continue;
+                    }
+
+                    matchAlias = hasAlias.matcher(fieldVals[i].strip());
+                    matchNoAlias = noAlias.matcher(fieldVals[i].strip());
+
+                    String toAdd = "";
+
+                    if (matchAlias.find()) {
+                        toAdd = matchAlias.group(1);
+                    } 
+                    
+                    if (matchNoAlias.find()) {
+                        toAdd = matchNoAlias.group(1);
+                    } 
+
+                    ArrayList<String> cAdd = generateAliasEntries(toAdd);
+
+                    repName = ""; 
+
+                    if (nameDict.containsKey(cAdd.get(0).toUpperCase())) {
+                        repName = nameDict.get(cAdd.get(0).toUpperCase());
+                    } else {
+                        repName = cAdd.get(0).toUpperCase();
+                    }
+
+                    for (String countryName : cAdd) {
+                        if (!nameDict.containsKey(countryName.toUpperCase())) {
+                            nameDict.put(repName, countryName.toUpperCase());
+                        }
+                    }
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void viewHashMap(HashMap<String, String> countriesGraph) {
         Set keys = countriesGraph.keySet();
 
         for (Object key : keys) {

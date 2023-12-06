@@ -44,7 +44,10 @@ public class IRoadTrip {
             TextCleaner.createBorderNameEntries(borders, nameDict, countriesGraph);
             TextCleaner.getStateNameDistances(capdist, nameDict, countriesGraph);
             TextCleaner.cleanData(countriesGraph);
-            TextCleaner.viewHashMap(countriesGraph);
+
+            borders = new FileReader(bordersfd);
+            TextCleaner.getValidCountriesWithoutCodes(borders, nameDict);
+            //TextCleaner.viewHashMap(nameDict);
         } catch (FileNotFoundException e) {
             System.out.println(e + "\nHalting execution...");
             System.exit(-1);
@@ -123,6 +126,11 @@ public class IRoadTrip {
     public List<String> findPath (String country1, String country2) {
         Country source = countriesGraph.get(country1);
         Country destination = countriesGraph.get(country2);
+
+        //if not a country with distances
+        if (!countriesGraph.containsKey(country1) || !countriesGraph.containsKey(country2)) {
+            return null;
+        }
 
         int distance = getDistance(country1, country2);
 
