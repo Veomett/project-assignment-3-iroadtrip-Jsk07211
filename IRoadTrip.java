@@ -84,6 +84,7 @@ public class IRoadTrip {
             for (Object neighbour : neighbours) {
                 String neighbourName = (String)neighbour;
 
+                //should always be >= 0 since we are looking at adjacent countries
                 int distanceFromNeighbour = getDistance(currentName, neighbourName);
 
                 //since current node already contains distance from source

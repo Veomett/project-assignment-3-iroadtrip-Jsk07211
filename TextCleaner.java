@@ -228,6 +228,11 @@ public class TextCleaner {
         for (Object countryName : countryNames) {
             HashMap<String, Integer> validNeighbours = new HashMap<String, Integer>();
             HashMap<String, Integer> neighbours = countriesGraph.get(((String)countryName));
+
+            if ((((String)countryName)).equals("DENMARK")) {
+                countriesGraph.replace((String)countryName, validNeighbours);
+            }
+
             Set neighbourNames = neighbours.keySet();
 
             //gets name of neighbours
