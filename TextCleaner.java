@@ -9,9 +9,6 @@ import java.util.LinkedList;
 import java.util.Collection;
 import java.io.*;
 
-//FIXME: borders.txt read countries regardless, state_name.tsv 
-//Can probably do a final loop at the end to add back to nameDict afterwards
-
 public class TextCleaner {
     public static void createStateNameEntries(FileReader stateNames, HashMap<String, String> nameDict, HashMap<String, Country> countriesGraph) {
         BufferedReader reader;
@@ -55,7 +52,9 @@ public class TextCleaner {
     }
 
     public static void createBorderNameEntries(FileReader borders, HashMap<String, String> nameDict, HashMap<String, Country> countriesGraph) {
+        //checks for strings with ()
         Pattern hasAlias = Pattern.compile("^([a-zA-Z\\-' ]+ \\([a-zA-Z ]+\\)) ([0-9,.]+) km$");
+        //checks for strings without ()
         Pattern noAlias = Pattern.compile("^([a-zA-Z\\-' ]+) ([0-9,.]+) km$");
         Matcher matchAlias;
         Matcher matchNoAlias;

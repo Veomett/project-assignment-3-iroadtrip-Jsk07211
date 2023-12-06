@@ -47,7 +47,6 @@ public class IRoadTrip {
 
             borders = new FileReader(bordersfd);
             TextCleaner.getValidCountriesWithoutCodes(borders, nameDict);
-            //TextCleaner.viewHashMap(nameDict);
         } catch (FileNotFoundException e) {
             System.out.println(e + "\nHalting execution...");
             System.exit(-1);
@@ -70,6 +69,7 @@ public class IRoadTrip {
         while (!path.isEmpty()) {
             Country c = path.poll();
 
+            //If country has never been visited before
             if (!finalDistances.containsKey(c)) {
                 finalDistances.put(c, c.getDistanceFromSource());
                 countriesVisited.put(c.getRepName(), c.getPrevCountry().getRepName());
@@ -145,9 +145,6 @@ public class IRoadTrip {
         while (toSearch != source.getRepName()) {
             String prevCountry = countriesVisited.get(toSearch);
             int dist = countriesGraph.get(toSearch).getNeighbours().get(prevCountry);
-
-            
-            //countriesGraph.get(toSearch).setDistanceFromSource(Integer.MAX_VALUE);
             
             String toAdd = "";
             toAdd = "* " + prevCountry + " --> " + toSearch + " (" +
