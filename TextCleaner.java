@@ -235,7 +235,8 @@ public class TextCleaner {
                 Integer distanceFromNeighbour = neighbours.get((String)neighbourName);
 
                 //if default value was replaced after capdist.csv
-                if (distanceFromNeighbour != Integer.MAX_VALUE) {
+                //ignore Denmark since it connects Canada to China
+                if (distanceFromNeighbour != Integer.MAX_VALUE && !neighbourName.equals("DENMARK")) {
                     validNeighbours.put((String)neighbourName, distanceFromNeighbour);
                 }
             }
