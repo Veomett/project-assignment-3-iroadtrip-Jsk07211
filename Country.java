@@ -83,6 +83,3 @@ public class Country implements Comparable<Country>{
         return toReturn;
     }
 }
-
-//FIXME: Anything without a date 2020, can ignore
-//FIXME: From borders.txt, still include the names for validation, but just say no neighbour
