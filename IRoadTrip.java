@@ -1,14 +1,10 @@
 import java.io.IOException;
 import java.util.Scanner;
 import java.util.HashMap;
-import java.util.StringTokenizer;
 import java.util.ArrayList;
-import java.util.regex.Pattern;
-import java.util.regex.Matcher;
 import java.util.Set;
 import java.util.Iterator;
 import java.util.PriorityQueue;
-import java.util.Deque;
 import java.util.List;
 import java.util.LinkedList;
 import java.util.Collection;
@@ -16,7 +12,7 @@ import java.io.*;
 
 public class IRoadTrip {
     protected HashMap<String, String> nameDict;
-    protected HashMap<String, Country> countriesGraph;
+    protected HashMap<String, HashMap<String, Integer>> countriesGraph;
     private HashMap<String, String> countriesVisited;
     private String bordersfd;
     private String capdistfd;
@@ -37,16 +33,13 @@ public class IRoadTrip {
             FileReader stateNames = new FileReader(stateNamesfd);
 
             nameDict = new HashMap<String, String>();
-            countriesGraph = new HashMap<String, Country>();
+            countriesGraph = new HashMap<String, HashMap<String, Integer>>();
             
             TextCleaner.createEntriesForNameExceptions(nameDict, countriesGraph);
             TextCleaner.createStateNameEntries(stateNames, nameDict, countriesGraph);
             TextCleaner.createBorderNameEntries(borders, nameDict, countriesGraph);
             TextCleaner.getStateNameDistances(capdist, nameDict, countriesGraph);
             TextCleaner.cleanData(countriesGraph);
-
-            borders = new FileReader(bordersfd);
-            TextCleaner.getValidCountriesWithoutCodes(borders, nameDict);
         } catch (FileNotFoundException e) {
             System.out.println(e + "\nHalting execution...");
             System.exit(-1);
@@ -54,97 +47,75 @@ public class IRoadTrip {
     }
 
     public int getDistance (String country1, String country2) {
-        PriorityQueue<Country> path = new PriorityQueue<Country>();
-        HashMap<Country, Integer> finalDistances = new HashMap<Country, Integer>();
-        HashMap<String, Country[]> visitedEdges = new HashMap<String, Country[]>();
-        countriesVisited = new HashMap<String, String>();
+        HashMap<String, Integer> neighbours = countriesGraph.get(country1);
 
-        Country source = countriesGraph.get(country1);
-        Country destination = countriesGraph.get(country2);
-
-        source.setDistanceFromSource(0);
-        source.setPrevCountry(source);
-        path.add(source);
-
-        while (!path.isEmpty()) {
-            Country c = path.poll();
-
-            //If country has never been visited before
-            if (!finalDistances.containsKey(c)) {
-                finalDistances.put(c, c.getDistanceFromSource());
-                countriesVisited.put(c.getRepName(), c.getPrevCountry().getRepName());
-            } else {
-                continue;
-            }
-
-            Collection neighbours = c.getNeighbours().keySet();
-
-            for (Object neighbour : neighbours) {
-                Country n = countriesGraph.get((String)neighbour);
-                int distanceFromHead = n.getNeighbours().get(c.getRepName());
-                int distanceFromSource = distanceFromHead + c.getDistanceFromSource();
-
-                //Only add to min heap if this route is faster
-                if (distanceFromSource < n.getDistanceFromSource()) {
-                    n.setPrevCountry(c);
-                    n.setDistanceFromSource(distanceFromSource);
-
-                    //String concatenation as key value pair
-                    String cnEdgeStr = c.getRepName() + n.getRepName();
-                    String ncEdgeStr = n.getRepName() + c.getRepName();
-
-                    Country[] countryPair = {c, n};
-
-                    //Never visited this edge before
-                    if (!visitedEdges.containsKey(cnEdgeStr) && !visitedEdges.containsKey(ncEdgeStr)) {
-                        visitedEdges.put(cnEdgeStr, countryPair);
-                        path.add(n);
-                    }
-                }
-            }
-        }
-        
-        int travelDist = 0;
-
-        //no path exists
-        if (destination.getDistanceFromSource() == Integer.MAX_VALUE) {
-            travelDist = -1;
+        if (neighbours == null || !neighbours.containsKey(country2)) {
+            return -1;
         } else {
-            travelDist = finalDistances.get(destination);
+            return neighbours.get(country2);
         }
 
-        //Restore countriesGraph back to default
-        Collection<Country[]> visitedKeys = visitedEdges.values();
-
-        for (Country[] visited : visitedKeys) {
-            TextCleaner.restoreDefault(visited);
-        }
-
-        return travelDist;
     }
 
     public List<String> findPath (String country1, String country2) {
-        Country source = countriesGraph.get(country1);
-        Country destination = countriesGraph.get(country2);
+        PriorityQueue<Node> path = new PriorityQueue<Node>();
+        HashMap<String, Integer> finalDistances = new HashMap<String, Integer>();
+        HashMap<String, String> visitedEdges = new HashMap<String, String>();
+        HashMap<String, String> countryPairs = new HashMap<String, String>();
+        
+        //initial min heap
+        Node source = new Node(country1, 0);
+        path.add(source);
 
-        //if not a country with distances
-        if (!countriesGraph.containsKey(country1) || !countriesGraph.containsKey(country2)) {
-            return null;
+        while (!path.isEmpty()) {
+            Node current = path.poll();
+            String currentName = current.getCountry();
+
+            if (!finalDistances.containsKey(currentName)) {
+                finalDistances.put(currentName, current.getDistance());
+                countryPairs.put(currentName, current.getPrevCountry());
+            } else {
+                continue;
+            }
+            
+            //gets set of neighbour keys
+            Set neighbours = countriesGraph.get(currentName).keySet();
+
+            for (Object neighbour : neighbours) {
+                String neighbourName = (String)neighbour;
+
+                int distanceFromNeighbour = getDistance(currentName, neighbourName);
+
+                //since current node already contains distance from source
+                int distanceFromSource = distanceFromNeighbour + current.getDistance();
+
+                if (finalDistances.get(neighbourName) == null || distanceFromSource < finalDistances.get(neighbourName)) {
+                    Node neighbourCountry = new Node(neighbourName, distanceFromSource);
+                    neighbourCountry.setPrevCountry(currentName);
+                    
+                    //Used to check if edge has been visited before, unique edge code by string concatenation
+                    String cnEdgeStr = currentName + neighbourName;
+                    String ncEdgeStr = neighbourName + currentName;
+
+                    if (!visitedEdges.containsKey(cnEdgeStr) && !visitedEdges.containsKey(ncEdgeStr)) {
+                        visitedEdges.put(cnEdgeStr, ncEdgeStr);
+                        path.add(neighbourCountry);
+                    }
+                }
+            } 
         }
 
-        int distance = getDistance(country1, country2);
-
-        if (distance < 0) {
+        if (!finalDistances.containsKey(country2)) {
             return null;
         }
 
         //we can constantly insert at start
         LinkedList<String> toReturn = new LinkedList<String>();
-        String toSearch = destination.getRepName();
+        String toSearch = country2;
 
-        while (toSearch != source.getRepName()) {
-            String prevCountry = countriesVisited.get(toSearch);
-            int dist = countriesGraph.get(toSearch).getNeighbours().get(prevCountry);
+        while (toSearch != country1) {
+            String prevCountry = countryPairs.get(toSearch);
+            int dist = countriesGraph.get(toSearch).get(prevCountry);
             
             String toAdd = "";
             toAdd = "* " + prevCountry + " --> " + toSearch + " (" +
@@ -155,6 +126,7 @@ public class IRoadTrip {
             toSearch = prevCountry;
         }
         return toReturn;
+
     }
 
     public void acceptUserInput() {
@@ -211,7 +183,6 @@ public class IRoadTrip {
                     System.out.println(text);
                 }
             }
-            setFiles();
         }
     }
 
@@ -219,7 +190,6 @@ public class IRoadTrip {
         if (args.length == 3) {
 
             IRoadTrip a3 = new IRoadTrip(args);
-
             a3.acceptUserInput();
 
         } else {

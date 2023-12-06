@@ -10,7 +10,7 @@ import java.util.Collection;
 import java.io.*;
 
 public class TextCleaner {
-    public static void createStateNameEntries(FileReader stateNames, HashMap<String, String> nameDict, HashMap<String, Country> countriesGraph) {
+    public static void createStateNameEntries(FileReader stateNames, HashMap<String, String> nameDict, HashMap<String, HashMap<String, Integer>> countriesGraph) {
         BufferedReader reader;
 
         try{
@@ -40,10 +40,10 @@ public class TextCleaner {
                     }
                 }
 
-                //creates country objects for those with valid
+                //added to country graph with no neighbours
                 if (!countriesGraph.containsKey(repVal)) {
-                    Country c = new Country(repVal);
-                    countriesGraph.put(repVal, c);
+                    HashMap<String, Integer> neighbours = new HashMap<String, Integer>();
+                    countriesGraph.put(repVal, neighbours);
                 }
             }
         } catch (IOException e) {
@@ -51,7 +51,7 @@ public class TextCleaner {
         }
     }
 
-    public static void createBorderNameEntries(FileReader borders, HashMap<String, String> nameDict, HashMap<String, Country> countriesGraph) {
+    public static void createBorderNameEntries(FileReader borders, HashMap<String, String> nameDict, HashMap<String, HashMap<String, Integer>> countriesGraph) {
         //checks for strings with ()
         Pattern hasAlias = Pattern.compile("^([a-zA-Z\\-' ]+ \\([a-zA-Z ]+\\)) ([0-9,.]+) km$");
         //checks for strings without ()
@@ -70,9 +70,28 @@ public class TextCleaner {
                 String[] fieldVals = line.split("=|;", 0);
                 ArrayList<String> countryKeys = generateAliasEntries(fieldVals[0]);
 
+                //add country names to hashmap if needed
+                String countryKey = countryKeys.get(0);
+
+                //get representative name
+                if (nameDict.containsKey(countryKey)) {
+                    countryKey = nameDict.get(countryKey);
+                }
+
+                for (String country : countryKeys) {
+                    if (!nameDict.containsKey(country)) {
+                        nameDict.put(country, countryKey);
+                    }
+                }
+
+                if (!countriesGraph.containsKey(countryKey)) {
+                    HashMap<String, Integer> neighbours = new HashMap<String, Integer>();
+                    countriesGraph.put(countryKey, neighbours);
+                }
+
                 for (int i = 1; i < fieldVals.length; i++) {
                     if (fieldVals[i].strip().length() == 0) {
-                        continue;
+                        break;
                     }
 
                     matchAlias = hasAlias.matcher(fieldVals[i].strip());
@@ -90,20 +109,31 @@ public class TextCleaner {
 
                     ArrayList<String> cAdd = generateAliasEntries(toAdd);
 
-                    //ensure using representative name for the country names
-                    if (nameDict.containsKey(countryKeys.get(0)) && nameDict.containsKey(cAdd.get(0))) {
-                        String countryKey = nameDict.get(countryKeys.get(0));
-                        String neighbourKey = nameDict.get(cAdd.get(0));
+                    //add country names to hashmap if needed
+                    String neighbourKey = cAdd.get(0);
 
-                        if (countriesGraph.containsKey(countryKey)) {
-                            Country c = countriesGraph.get(countryKey);
-                            Country n = countriesGraph.get(neighbourKey);
+                    if (nameDict.containsKey(neighbourKey)) {
+                        neighbourKey = nameDict.get(neighbourKey);
+                    }
 
-                            //Add border indicator to neighbour hashmap of both countries
-                            c.addNeighbour(neighbourKey);
-                            n.addNeighbour(countryKey);
+                    for (String country : cAdd) {
+                        if (!nameDict.containsKey(country)) {
+                            nameDict.put(country.toUpperCase(), neighbourKey);
                         }
                     }
+
+                    if (!countriesGraph.containsKey(neighbourKey)) {
+                        HashMap<String, Integer> neighbours = new HashMap<String, Integer>();
+                        countriesGraph.put(neighbourKey, neighbours);
+                    }
+
+                    HashMap<String, Integer> country = countriesGraph.get(countryKey);
+                    HashMap<String, Integer> neighbour = countriesGraph.get(neighbourKey);
+
+                    //Add border indicator to neighbour hashmap of both countries
+                    //Add all neighbours 
+                    country.put(neighbourKey, Integer.MAX_VALUE);
+                    neighbour.put(countryKey, Integer.MAX_VALUE);
                 }
             }
         } catch (IOException e) {
@@ -111,7 +141,7 @@ public class TextCleaner {
         }
     }
     
-    public static void getStateNameDistances(FileReader capdist, HashMap<String, String> nameDict, HashMap<String, Country> countriesGraph) {
+    public static void getStateNameDistances(FileReader capdist, HashMap<String, String> nameDict, HashMap<String, HashMap<String, Integer>> countriesGraph) {
         BufferedReader reader;
 
         try{
@@ -123,16 +153,14 @@ public class TextCleaner {
                 String[] fieldVals = line.split(",", 0);
 
                 //uses country codes from state_name.tsv
-                String countryKey = nameDict.get(fieldVals[1]);
-                String neighbourKey = nameDict.get(fieldVals[3]);
-                int distanceFromSource = Integer.parseInt(fieldVals[4]);
+                String countryKey = nameDict.get(fieldVals[1].toUpperCase());
+                String neighbourKey = nameDict.get(fieldVals[3].toUpperCase());
+                int distanceFromNeighbour = Integer.parseInt(fieldVals[4]);
 
-                Country c = countriesGraph.get(countryKey);
-
-                if (c != null && neighbourKey != null && c.getNeighbours().containsKey(neighbourKey)) {
-                    Country n = countriesGraph.get(neighbourKey);
-                    c.setNeighbourDistance(neighbourKey, distanceFromSource);
-                    n.setNeighbourDistance(countryKey, distanceFromSource);
+                //If country A exists as a country and country B exists as its neighbour
+                if (countriesGraph.containsKey(countryKey) && countriesGraph.get(countryKey).containsKey(neighbourKey)) {
+                    countriesGraph.get(countryKey).replace(neighbourKey, distanceFromNeighbour);
+                    countriesGraph.get(neighbourKey).replace(countryKey, distanceFromNeighbour);
                 }
             }
         } catch (IOException e) {
@@ -142,17 +170,18 @@ public class TextCleaner {
     
     //creates keys for states with difficult to detect aliases
     //create keys for country codes not in state_name.tsv
-    public static void createEntriesForNameExceptions(HashMap<String, String> nameDict, HashMap<String, Country> countriesGraph) {
+    public static void createEntriesForNameExceptions(HashMap<String, String> nameDict, HashMap<String, HashMap<String, Integer>> countriesGraph) {
         //First entry of alias list is the representative country code
         String[] DRCAliases = {"Congo, Democratic Republic of", "Congo, Democratic Republic of the", "Democratic Republic of the Congo", "DRC"};
         String[] PRKAliases = {"North Korea", "Korea, North", "PRK"};
         String[] ROKAliases = {"South Korea", "Korea, South", "Korea", "ROK", "KOR"};
         String[] MYAAliases = {"Burma", "Myanmar", "MYA"};
-        String[] USAAliases = {"United States of America", "United States", "USA"};
+        String[] USAAliases = {"United States of America", "United States", "US", "USA"};
         String[] DENAliases = {"Denmark", "Greenland", "DEN"};
         String[] BHMAliases = {"Bahamas", "Bahamas, The", "BHM"};
         String[] UKGAliases = {"United Kingdom", "UK", "UKG"};
         String[] DRVAliases = {"Vietnam, Democratic Republic of", "Vietnam", "DRV"};
+        String[] GFRAliases = {"German Federal Republic", "Germany", "GFR"};
 
         ArrayList<String[]> exceptionsList = new ArrayList<String[]>();
         exceptionsList.add(DRCAliases);
@@ -164,11 +193,12 @@ public class TextCleaner {
         exceptionsList.add(BHMAliases);
         exceptionsList.add(UKGAliases);
         exceptionsList.add(DRVAliases);
+        exceptionsList.add(GFRAliases);
 
         for (String[] aliasList : exceptionsList) {
             String repName = aliasList[0].toUpperCase();
-            Country c = new Country(repName);
-            countriesGraph.put(repName, c);
+            HashMap<String, Integer> neighbours = new HashMap<String, Integer>();
+            countriesGraph.put(repName, neighbours);
 
             for (String val : aliasList) {
                 nameDict.put(val.toUpperCase(), repName);
@@ -191,97 +221,44 @@ public class TextCleaner {
         return toAdd;
     }
 
-    public static void cleanData(HashMap<String, Country> countriesGraph) {
-        Collection values = countriesGraph.values();
+    public static void cleanData(HashMap<String, HashMap<String, Integer>> countriesGraph) {
+        Set countryNames = countriesGraph.keySet();
 
-        for (Object country : values) {
-            ((Country)country).removeNullEntries();
-        }
-    }
+        //gets name of country
+        for (Object countryName : countryNames) {
+            HashMap<String, Integer> validNeighbours = new HashMap<String, Integer>();
+            HashMap<String, Integer> neighbours = countriesGraph.get(((String)countryName));
+            Set neighbourNames = neighbours.keySet();
 
-    public static void restoreDefault(Country[] toRestore) {
-        for (Country country : toRestore) {
-            country.setDistanceFromSource(Integer.MAX_VALUE);
-            country.setPrevCountry(null);
-        }
-    }
+            //gets name of neighbours
+            for (Object neighbourName : neighbourNames) {
+                Integer distanceFromNeighbour = neighbours.get((String)neighbourName);
 
-    public static void getValidCountriesWithoutCodes(FileReader borders, HashMap<String, String> nameDict) {
-        Pattern hasAlias = Pattern.compile("^([a-zA-Z\\-' ]+ \\([a-zA-Z ]+\\)) ([0-9,.]+) km$");
-        Pattern noAlias = Pattern.compile("^([a-zA-Z\\-' ]+) ([0-9,.]+) km$");
-        Matcher matchAlias;
-        Matcher matchNoAlias;
-
-        BufferedReader reader;
-
-        try{
-            reader = new BufferedReader(borders);
-
-            String line = reader.readLine();
-
-            for (line = reader.readLine(); line != null; line = reader.readLine()) {
-                String[] fieldVals = line.split("=|;", 0);
-                ArrayList<String> countryKeys = generateAliasEntries(fieldVals[0]);
-
-                String repName = ""; 
-
-                if (nameDict.containsKey(countryKeys.get(0).toUpperCase())) {
-                    repName = nameDict.get(countryKeys.get(0).toUpperCase());
-                } else {
-                    repName = countryKeys.get(0).toUpperCase();
-                }
-
-                for (String countryName : countryKeys) {
-                    if (!nameDict.containsKey(countryName.toUpperCase())) {
-                        nameDict.put(countryName.toUpperCase(), repName);
-                    }
-                }
-
-                for (int i = 1; i < fieldVals.length; i++) {
-                    if (fieldVals[i].strip().length() == 0) {
-                        continue;
-                    }
-
-                    matchAlias = hasAlias.matcher(fieldVals[i].strip());
-                    matchNoAlias = noAlias.matcher(fieldVals[i].strip());
-
-                    String toAdd = "";
-
-                    if (matchAlias.find()) {
-                        toAdd = matchAlias.group(1);
-                    } 
-                    
-                    if (matchNoAlias.find()) {
-                        toAdd = matchNoAlias.group(1);
-                    } 
-
-                    ArrayList<String> cAdd = generateAliasEntries(toAdd);
-
-                    repName = ""; 
-
-                    if (nameDict.containsKey(cAdd.get(0).toUpperCase())) {
-                        repName = nameDict.get(cAdd.get(0).toUpperCase());
-                    } else {
-                        repName = cAdd.get(0).toUpperCase();
-                    }
-
-                    for (String countryName : cAdd) {
-                        if (!nameDict.containsKey(countryName.toUpperCase())) {
-                            nameDict.put(repName, countryName.toUpperCase());
-                        }
-                    }
+                //if default value was replaced after capdist.csv
+                if (distanceFromNeighbour != Integer.MAX_VALUE) {
+                    validNeighbours.put((String)neighbourName, distanceFromNeighbour);
                 }
             }
-        } catch (IOException e) {
-            e.printStackTrace();
+
+            //have graph point at new hashmap with valid neighbours
+            countriesGraph.replace((String)countryName, validNeighbours);
         }
+
     }
 
-    public static void viewHashMap(HashMap<String, String> countriesGraph) {
-        Set keys = countriesGraph.keySet();
+    public static void viewHashMap(HashMap<String, HashMap<String, Integer>> countriesGraph) {
+        Set countryNames = countriesGraph.keySet();
+        
+        //gets name of country
+        for (Object countryName : countryNames) {
+            System.out.println("Country " + countryName + ":");
+            HashMap<String, Integer> neighbours = countriesGraph.get(((String)countryName));
+            Set neighbourNames = neighbours.keySet();
 
-        for (Object key : keys) {
-            System.out.println("countriesGraph[" + key + "]: " + countriesGraph.get(key));
+            //gets name of neighbours
+            for (Object neighbourName : neighbourNames) {
+                System.out.println("\tneighbourName[" + (String)neighbourName + "]: " + Integer.toString(neighbours.get((String)neighbourName)));
+            }
         }
-    }
+    }   
 }
