@@ -58,14 +58,16 @@ public class IRoadTrip {
     }
 
     public int getDistance (String country1, String country2) {
-        HashMap<String, Integer> neighbours = countriesGraph.get(country1);
+        String source = nameDict.get(country1.toUpperCase());
+        String destination = nameDict.get(country2.toUpperCase());
 
-        if (neighbours == null || !neighbours.containsKey(country2)) {
+        HashMap<String, Integer> neighbours = countriesGraph.get(source);
+
+        if (neighbours == null || !neighbours.containsKey(destination)) {
             return -1;
         } else {
-            return neighbours.get(country2);
+            return neighbours.get(destination);
         }
-
     }
 
     public List<String> findPath (String country1, String country2) {
