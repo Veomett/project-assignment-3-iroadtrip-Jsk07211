@@ -49,7 +49,9 @@
 #### Reading of Files
 With the assumption that the arguments will always be input in this order:
 <br>
+<br>
 ```java IRoadTrip borders.txt capdist.csv state_name.tsv```
+<br>
 <br>
 The files were reading in this order:
 <ol>
@@ -84,12 +86,12 @@ The files were reading in this order:
         </ul>
     </li>
 <br>
+</ol>
+
 Countries that did not exist in all three files were not added to the list of countries with neighbours, but were noted as valid countries that exist
 <br>
 <br>
 The data cleaning was handled using methods from the TextCleaner class.
-</ol>
-
 
 ## HashMaps Explained
 HashMaps used throughout the code:
