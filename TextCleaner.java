@@ -1,10 +1,32 @@
+/**
+ * 
+ * This is a static class used to read and clean up data from text files and update the respective hashmaps
+ * 
+ * Methods for:
+ *  void createStateNameEntries()
+ *      - Adds to nameDict: Keys are country aliases, values are the representative country name
+ *      - Adds to countriesGraph: Keys are the representative country names, values are empty hashmaps
+ * 
+ *  void createBorderNameEntries()
+ *      - Adds to nameDict: Keys are country names (with or without country codes)
+ *      - Adds to countriesGraph: For the value hashmap, adds keys (neighbour names) with values (Integer.MAX_VALUE)
+ * 
+ *  void getStateNameDistances()
+ *      - Adds to countriesGraph: For the value hashmap, adds keys (neighbour names) with values (actual distances between capitals)
+ * 
+ *  void createEntriesForNameExceptions()
+ *      - Similar to createStateNameEntries(), but for countries with non-obvious aliases
+ * 
+ *  void cleanData() 
+ *      - Remove all neighbours in countriesGraph's values that have Integer.MAX_VALUE as distance between capitals
+ * 
+ */
+
 import java.util.HashMap;
-import java.util.StringTokenizer;
 import java.util.ArrayList;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 import java.util.Set;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Collection;
 import java.io.*;
@@ -249,7 +271,6 @@ public class TextCleaner {
             //have graph point at new hashmap with valid neighbours
             countriesGraph.replace((String)countryName, validNeighbours);
         }
-
     }
 
     public static void viewHashMap(HashMap<String, HashMap<String, Integer>> countriesGraph) {

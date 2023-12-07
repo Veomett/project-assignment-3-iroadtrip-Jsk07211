@@ -1,3 +1,15 @@
+/**
+ * 
+ *  void setFiles()
+ *      - Read files passed as arguments and cleans up data accordingly
+ * 
+ *  int getDistance()
+ *      - Gets distance between two countries
+ * 
+ *  List<String> findPath()
+ *      - Gets path between source country and destination country
+ */
+
 import java.io.IOException;
 import java.util.Scanner;
 import java.util.HashMap;
@@ -13,7 +25,6 @@ import java.io.*;
 public class IRoadTrip {
     protected HashMap<String, String> nameDict;
     protected HashMap<String, HashMap<String, Integer>> countriesGraph;
-    private HashMap<String, String> countriesVisited;
     private String bordersfd;
     private String capdistfd;
     private String stateNamesfd;
@@ -60,7 +71,7 @@ public class IRoadTrip {
     public List<String> findPath (String country1, String country2) {
         PriorityQueue<Node> path = new PriorityQueue<Node>();
         HashMap<String, Integer> finalDistances = new HashMap<String, Integer>();
-        HashMap<String, String> visitedEdges = new HashMap<String, String>();
+        LinkedList<String> visitedEdges = new LinkedList<String>();
         HashMap<String, String> countryPairs = new HashMap<String, String>();
         
         //initial min heap
@@ -98,8 +109,8 @@ public class IRoadTrip {
                     String cnEdgeStr = currentName + neighbourName;
                     String ncEdgeStr = neighbourName + currentName;
 
-                    if (!visitedEdges.containsKey(cnEdgeStr) && !visitedEdges.containsKey(ncEdgeStr)) {
-                        visitedEdges.put(cnEdgeStr, ncEdgeStr);
+                    if (!visitedEdges.contains(cnEdgeStr) && !visitedEdges.contains(ncEdgeStr)) {
+                        visitedEdges.addFirst(cnEdgeStr);
                         path.add(neighbourCountry);
                     }
                 }

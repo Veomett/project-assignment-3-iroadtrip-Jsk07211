@@ -1,3 +1,9 @@
+/**
+ * 
+ * An object from this class keeps track of the country distance from source, and what country put it in the graph as a node
+ * 
+ */
+
 public class Node implements Comparable<Node> {
     private String country;
     private int distance;
