@@ -195,9 +195,8 @@ public class TextCleaner {
     public static void createEntriesForNameExceptions(HashMap<String, String> nameDict, HashMap<String, HashMap<String, Integer>> countriesGraph) {
         //First entry of alias list is the representative country code
         String[] DRCAliases = {"Congo, Democratic Republic of", "Congo, Democratic Republic of the", "Democratic Republic of the Congo", "DRC"};
-        String[] PRKAliases = {"North Korea", "Korea, North", "PRK"};
-        String[] ROKAliases = {"South Korea", "Korea, South", "Korea", "ROK", "KOR"};
-        String[] MYAAliases = {"Burma", "Myanmar", "MYA"};
+        String[] PRKAliases = {"North Korea", "Korea, North", "Korea, People's Republic of", "PRK"};
+        String[] ROKAliases = {"South Korea", "Korea, South", "Korea, Republic of", "KOR"};
         String[] USAAliases = {"United States of America", "United States", "US", "USA"};
         String[] DENAliases = {"Denmark", "Greenland", "DEN"};
         String[] BHMAliases = {"Bahamas", "Bahamas, The", "BHM"};
@@ -209,7 +208,6 @@ public class TextCleaner {
         exceptionsList.add(DRCAliases);
         exceptionsList.add(PRKAliases);
         exceptionsList.add(ROKAliases);
-        exceptionsList.add(MYAAliases);
         exceptionsList.add(USAAliases);
         exceptionsList.add(DENAliases);
         exceptionsList.add(BHMAliases);
