@@ -48,7 +48,9 @@
 ## About the Project
 #### Reading of Files
 With the assumption that the arguments will always be input in this order:
+<br>
 ```java IRoadTrip borders.txt capdist.csv state_name.tsv```
+<br>
 The files were reading in this order:
 <ol>
     <li>
